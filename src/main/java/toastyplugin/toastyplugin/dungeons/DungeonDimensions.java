@@ -1,6 +1,6 @@
 package toastyplugin.toastyplugin.dungeons;
 
-public class Dungeon {
+public class DungeonDimensions {
 
     private int startX;
     private int startY;
@@ -9,7 +9,16 @@ public class Dungeon {
     private int ySize;
     private int zSize;
 
-    public Dungeon(int startX, int startY, int startZ, int xSize, int ySize, int zSize) {
+    public DungeonDimensions(int startX, int startY, int startZ) {
+        this.startX = startX;
+        this.startY = startY;
+        this.startZ = startZ;
+        this.xSize = -1;
+        this.ySize = -1;
+        this.zSize = -1;
+    }
+
+    public DungeonDimensions(int startX, int startY, int startZ, int xSize, int ySize, int zSize) {
         this.startX = startX;
         this.startY = startY;
         this.startZ = startZ;
