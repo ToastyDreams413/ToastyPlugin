@@ -1,5 +1,5 @@
 # Ignore everything
-*
+.idea/vcs.xml
 
 # But don't ignore .java, plugin.yml, or pom.xml files
 !*.java
