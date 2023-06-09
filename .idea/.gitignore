@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# But don't ignore .java, plugin.yml, or pom.xml files
+!*.java
+!plugin.yml
+!pom.xml
+
+# Also, don't ignore .gitignore or directories (which are necessary to find the un-ignored files in them)
+!.gitignore
+!*/
