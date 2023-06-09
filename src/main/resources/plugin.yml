@@ -1,0 +1,17 @@
+name: ToastyPlugin
+version: '${project.version}'
+main: toastyplugin.toastyplugin.ToastyPlugin
+api-version: 1.19
+commands:
+  setspawn:
+    description: Sets the spawn location.
+  warp:
+    description: Warps the player to a location.
+  spawnmob:
+    description: spawns a mob at the player's location.
+  setrank:
+    description: sets a player's rank.
+  giveitem:
+    description: gives an item.
+  dungeon:
+    description: generates a dungeon.
