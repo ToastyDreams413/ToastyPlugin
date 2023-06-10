@@ -8,6 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -21,8 +22,8 @@ import java.util.*;
 
 public class InteractionListener implements Listener {
     private final ToastyPlugin plugin;
-    private HashMap<UUID, Long> lastWandShoot = new HashMap<>();
-    private static final HashMap<UUID, Set<UUID>> damagedEntities = new HashMap<>();
+    private Map<UUID, Long> lastWandShoot = new HashMap<>();
+    private static final Map<UUID, Set<UUID>> damagedEntities = new HashMap<>();
 
     public InteractionListener(ToastyPlugin plugin) {
         this.plugin = plugin;
@@ -63,38 +64,16 @@ public class InteractionListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
 
             // chest looting
-            Block block = event.getClickedBlock();
-            if (block.getType() == Material.CHEST) {
-                Location blockLocation = block.getLocation();
-                UUID mobUniqueId = getMobUniqueIdFromLocation(blockLocation);
-                if (mobUniqueId != null) {
-                    event.setCancelled(true); // cancels the default chest interaction
-
-                    UUID playerUniqueId = player.getUniqueId();
-
-                    if (!didEnoughDamage(mobUniqueId, playerUniqueId, 0)) {
-                        player.sendMessage(ChatColor.RED + "You did not deal enough damage to open this chest!");
-                        return;
+            if (plugin.lootInventories.containsKey(player.getUniqueId())) {
+                for (HashMap<Location, Inventory> currentLoot : plugin.lootInventories.get(player.getUniqueId())) {
+                    if (currentLoot.containsKey(event.getClickedBlock().getLocation())) {
+                        event.getPlayer().openInventory(currentLoot.get(event.getClickedBlock().getLocation()));
                     }
-
-                    if (playerAlreadyLooted(mobUniqueId, playerUniqueId)) {
-                        player.sendMessage(ChatColor.RED + "You have already looted this chest!");
-                        return;
-                    }
-                    plugin.lootChests.get(mobUniqueId).add(playerUniqueId);
-
-                    Inventory inv = Bukkit.createInventory(null, 9, "Loot Chest"); // creates an inventory with 9 slots
-                    ItemStack reward = new ItemStack(Material.DIAMOND, 5); // replace with your item
-                    inv.addItem(reward); // add item to the inventory
-
-                    // schedule GUI opening one tick later to avoid issues with the event cancelling
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> event.getPlayer().openInventory(inv), 1L);
                 }
-            } // end chest looting
-
+            }
 
         }
 
@@ -173,16 +152,6 @@ public class InteractionListener implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
-    }
-
-    public void customDamage(LivingEntity entity, double damage, Player damager) {
-        EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(damager, entity, EntityDamageEvent.DamageCause.CUSTOM, damage);
-        Bukkit.getPluginManager().callEvent(damageEvent);
-
-        if (!damageEvent.isCancelled()) {
-            entity.setHealth(Math.max(0, entity.getHealth() - damage));
-            entity.damage(0, damager);
-        }
     }
 
 

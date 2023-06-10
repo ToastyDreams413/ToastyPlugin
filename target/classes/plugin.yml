@@ -2,6 +2,7 @@ name: ToastyPlugin
 version: '1.0-SNAPSHOT'
 main: toastyplugin.toastyplugin.ToastyPlugin
 api-version: 1.19
+depend: [ProtocolLib]
 commands:
   setspawn:
     description: Sets the spawn location.
@@ -15,3 +16,5 @@ commands:
     description: gives an item.
   dungeon:
     description: generates a dungeon.
+  pickupstash:
+    description: picks up stash.

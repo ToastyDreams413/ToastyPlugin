@@ -2,10 +2,9 @@ package toastyplugin.toastyplugin;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
+import org.bukkit.entity.*;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -17,15 +16,22 @@ import toastyplugin.toastyplugin.event_listeners.*;
 import toastyplugin.toastyplugin.items.weapons.CustomBow;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
 
     private FileConfiguration config;
 
-    public HashMap<UUID, Vector<UUID>> lootChests = new HashMap<>();
-    public HashMap<UUID, HashMap<UUID, Double>> playerDamage = new HashMap<>();
-    public HashMap<Location, UUID> mobDeathLocations = new HashMap<>();
-    public HashMap<UUID, BukkitTask> playersActionBarTasks = new HashMap<>();
+    public Map<UUID, Vector<UUID>> lootChests = new HashMap<>();
+
+    // <entity UUID, <player UUID, total damage dealt>>
+    public Map<UUID, HashMap<UUID, Double>> playerDamage = new ConcurrentHashMap<>();
+    public Map<Location, UUID> mobDeathLocations = new ConcurrentHashMap<>();
+    public Map<UUID, BukkitTask> playersActionBarTasks = new ConcurrentHashMap<>();
+
+    // <player UUID, <entity death location, saved inventory (loot)>>
+    public Map<UUID, Vector<HashMap<Location, Inventory>>> lootInventories = new ConcurrentHashMap<>();
+    public Map<UUID, LinkedList<ItemStack>> stashItems = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -39,6 +45,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         this.getCommand("setrank").setExecutor(new SetRankCommand(this));
         this.getCommand("giveitem").setExecutor(new GiveItemCommand(this));
         this.getCommand("dungeon").setExecutor(new GenerateDungeonCommand(this));
+        this.getCommand("pickupstash").setExecutor(new PickUpStashCommand(this));
 
         // event listeners
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
@@ -50,7 +57,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         getServer().getPluginManager().registerEvents(new InteractionListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityDamagedListener(this), this);
         getServer().getPluginManager().registerEvents(new WorldSettingListener(), this);
-        getServer().getPluginManager().registerEvents(new InventoryClickListener(), this);
+        getServer().getPluginManager().registerEvents(new InventoryClickListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(), this);
         getServer().getPluginManager().registerEvents(new CustomBow(this), this);
 

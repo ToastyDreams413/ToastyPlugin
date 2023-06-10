@@ -1,10 +1,11 @@
 package toastyplugin.toastyplugin.data;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class ItemTypes {
 
-    public static final HashMap<String, String> ITEM_TYPE = new HashMap<String, String>() {{
+    public static final Map<String, String> ITEM_TYPE = new HashMap<String, String>() {{
         put("Starter Sword", "sword");
 
         put("Starter Wand", "wand");

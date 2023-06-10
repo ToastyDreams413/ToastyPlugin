@@ -41,7 +41,6 @@ public class EntityDamagedListener implements Listener {
 
             if (item.getType() == Material.WOODEN_SWORD && item.getItemMeta().hasCustomModelData()) {
                 event.setDamage(SwordData.SWORD_DAMAGE.get(ChatColor.stripColor(item.getItemMeta().getDisplayName())));
-                player.sendMessage("You dealt 5 damage!");
             }
 
             else if (item.getType() == Material.STONE_SWORD && item.getItemMeta().hasCustomModelData()) {

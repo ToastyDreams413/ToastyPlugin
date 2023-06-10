@@ -12,11 +12,12 @@ import toastyplugin.toastyplugin.ToastyPlugin;
 import toastyplugin.toastyplugin.mobs.CustomZombie;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class DungeonGenerator {
 
-    private static HashMap<String, Vector<Vector<DungeonDimensions>>> dungeonsToClear = new HashMap<>();
+    private static Map<String, Vector<Vector<DungeonDimensions>>> dungeonsToClear = new HashMap<>();
 
     public static Location generateDungeon(ToastyPlugin plugin, String dungeonName) {
         if (dungeonName.equals("Chicken's Den")) {

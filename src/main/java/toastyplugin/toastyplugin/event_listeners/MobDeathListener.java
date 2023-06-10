@@ -1,19 +1,28 @@
 package toastyplugin.toastyplugin.event_listeners;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.BlockPosition;
+import com.comphenix.protocol.wrappers.WrappedBlockData;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import toastyplugin.toastyplugin.ToastyPlugin;
+import toastyplugin.toastyplugin.gui.CustomInventoryHolder;
 
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.Vector;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MobDeathListener implements Listener {
 
@@ -32,25 +41,76 @@ public class MobDeathListener implements Listener {
 
                 Location deathLocation = event.getEntity().getLocation();
 
-                deathLocation.getBlock().setType(Material.CHEST);
-
-                Vector<UUID> uuidVector = new Vector<>();
-                UUID mobUniqueId = event.getEntity().getUniqueId();
-
-                plugin.lootChests.put(mobUniqueId, uuidVector);
-                plugin.mobDeathLocations.put(deathLocation, event.getEntity().getUniqueId());
-
-                // Schedule a task to remove the chest after 30 seconds
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    if (deathLocation.getBlock().getType() == Material.CHEST) {
-                        deathLocation.getBlock().setType(Material.AIR);
-                        plugin.playerDamage.remove(mobUniqueId);
-                        plugin.lootChests.remove(mobUniqueId);
-                        plugin.mobDeathLocations.remove(deathLocation);
+                int c = 1;
+                for (UUID playerUniqueId : plugin.playerDamage.get(event.getEntity().getUniqueId()).keySet()) {
+                    System.out.println("UUID Count: " + (c++));
+                    if (plugin.playerDamage.get(event.getEntity().getUniqueId()).get(playerUniqueId) > 0) {
+                        spawnChest(event.getEntity(), Bukkit.getServer().getPlayer(playerUniqueId), deathLocation);
                     }
-                }, 600L); // 30 seconds * 20 ticks/second
+                }
+
             }
         }
+    }
+
+
+
+    private void spawnChest(Entity entity, Player player, Location location) {
+
+        LivingEntity killedMob = (LivingEntity) entity;
+        double damageDone = plugin.playerDamage.get(killedMob.getUniqueId()).getOrDefault(player.getUniqueId(), 0.0);
+        if (damageDone <= 0) {
+            return;
+        }
+
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+
+        // Set the location
+        packet.getBlockPositionModifier().write(0, new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+
+        // Set the new block data
+        BlockData blockData = Material.BLACK_WOOL.createBlockData();
+        packet.getBlockData().write(0, WrappedBlockData.createData(blockData));
+
+        // Send the packet to the player
+        try {
+            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+
+            Inventory lootInventory = Bukkit.createInventory(new CustomInventoryHolder("Loot"), 27, "Loot");
+            int numDiamonds = (int) (Math.random() * 10) + 1;
+            lootInventory.addItem(new ItemStack(Material.DIAMOND, numDiamonds));
+
+            Vector<HashMap<Location, Inventory>> currentLootVector = plugin.lootInventories.getOrDefault(player.getUniqueId(), new Vector<>());
+
+            HashMap<Location, Inventory> currentLootInventory = new HashMap<>();
+            Location toInteractLocation = new Location(player.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+            currentLootInventory.put(toInteractLocation, lootInventory);
+            currentLootVector.add(currentLootInventory);
+            plugin.lootInventories.put(player.getUniqueId(), currentLootVector);
+
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                public void run() {
+                    PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+
+                    // Set the location
+                    packet.getBlockPositionModifier().write(0, new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+
+                    // Set the new block data
+                    BlockData blockData = Material.AIR.createBlockData();
+                    packet.getBlockData().write(0, WrappedBlockData.createData(blockData));
+                    try {
+                        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+                    }
+                    catch (InvocationTargetException e) {
+                        throw new RuntimeException("Could not send packet.", e);
+                    }
+                }
+            }, 600L);
+        }
+        catch (InvocationTargetException e) {
+            throw new RuntimeException("Could not send packet.", e);
+        }
+
     }
 
 }

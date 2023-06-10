@@ -8,10 +8,19 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import toastyplugin.toastyplugin.ToastyPlugin;
 import toastyplugin.toastyplugin.gui.CustomInventoryHolder;
 import toastyplugin.toastyplugin.items.other.CustomWarp;
 
+import java.util.*;
+
 public class InventoryClickListener implements Listener {
+
+    private final ToastyPlugin plugin;
+
+    public InventoryClickListener(ToastyPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler
     public void onMenuClick(InventoryClickEvent event) {
@@ -32,7 +41,24 @@ public class InventoryClickListener implements Listener {
 
                 event.setCancelled(true); // prevents taking the item
 
-                if (((CustomInventoryHolder) inventory.getHolder()).getName().equals("Main Menu")) {
+                if (((CustomInventoryHolder) inventory.getHolder()).getName().equals("Loot")) {
+                    HashMap<Integer, ItemStack> remainingItems = player.getInventory().addItem(clickedItem);
+                    LinkedList<ItemStack> stashedItems = plugin.stashItems.getOrDefault(player.getUniqueId(), new LinkedList<>());
+
+                    if (remainingItems.isEmpty()) {
+                        event.setCurrentItem(null);
+                    }
+                    else {
+                        player.sendMessage("You didn't have enough space, so some items were added to your stash!");
+                        for (ItemStack itemStack : remainingItems.values()) {
+                            stashedItems.add(new ItemStack(itemStack.getType(), itemStack.getAmount()));
+                        }
+                        clickedItem.setAmount(0);
+                    }
+                    plugin.stashItems.put(player.getUniqueId(), stashedItems);
+                }
+
+                else if (((CustomInventoryHolder) inventory.getHolder()).getName().equals("Main Menu")) {
                     if (clickedItem.getType() == Material.DIAMOND) {
                         Inventory classMenu = Bukkit.createInventory(new CustomInventoryHolder("Class Menu"), 54, "Class Menu");
                         player.openInventory(classMenu);

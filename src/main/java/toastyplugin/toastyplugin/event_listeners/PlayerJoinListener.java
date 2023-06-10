@@ -23,7 +23,9 @@ import toastyplugin.toastyplugin.items.weapons.CustomSword;
 import toastyplugin.toastyplugin.items.weapons.CustomWand;
 import toastyplugin.toastyplugin.mobs.CustomZombie;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 
 public class PlayerJoinListener implements Listener {
 
@@ -70,6 +72,9 @@ public class PlayerJoinListener implements Listener {
 
         player.setMetadata("health", new FixedMetadataValue(plugin, plugin.getConfig().getInt(uuid + ".maxHealth")));
         player.setMetadata("mana", new FixedMetadataValue(plugin, plugin.getConfig().getInt(uuid + ".maxMana")));
+
+        plugin.lootInventories.put(player.getUniqueId(), new Vector<>());
+        plugin.stashItems.put(player.getUniqueId(), new LinkedList<>());
 
         BukkitTask task = new BukkitRunnable() {
             @Override

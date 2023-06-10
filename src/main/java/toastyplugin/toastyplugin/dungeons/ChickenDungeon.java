@@ -1,18 +1,20 @@
 package toastyplugin.toastyplugin.dungeons;
 
 import org.bukkit.*;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.scheduler.BukkitRunnable;
 import toastyplugin.toastyplugin.ToastyPlugin;
 import toastyplugin.toastyplugin.mobs.CustomZombie;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class ChickenDungeon {
 
     private static boolean[] roomsCreated;
-    private static HashMap<Integer, Material[][][]> roomMaps = new HashMap<>();
-    private static HashMap<Integer, Vector<DungeonEntity>> roomEntities = new HashMap<>();
+    private static Map<Integer, Material[][][]> roomMaps = new HashMap<>();
+    private static Map<Integer, Vector<DungeonEntity>> roomEntities = new HashMap<>();
 
     private final ToastyPlugin plugin;
 
@@ -22,6 +24,7 @@ public class ChickenDungeon {
 
 
 
+    // create a new Chicken's Den dungeon
     public ChickenDungeon(ToastyPlugin plugin, int startX, int startY, int startZ) {
 
         this.plugin = plugin;
@@ -41,6 +44,9 @@ public class ChickenDungeon {
 
 
 
+    // creates the dungeon based on the correct path
+    // first it generates random rooms following the correct path
+    // then it creates other random rooms / paths
     public void createDungeon(String path) {
         int curX = startCoords.getStartX();
         int curY = startCoords.getStartY();
@@ -77,17 +83,19 @@ public class ChickenDungeon {
 
 
 
+    // creates a string that represents the correct path
+    // from the start to the end of the dungeon
     public String generateCorrectPath(int numRooms) {
 
         String correctPathString = " ";
-        HashMap<Integer, Character> numToDir = new HashMap<Integer, Character>() {{
+        Map<Integer, Character> numToDir = new HashMap<Integer, Character>() {{
             put(0, 'U');
             put(1, 'D');
             put(2, 'L');
             put(3, 'R');
         }};
 
-        HashMap<Character, Character> oppositeDirs = new HashMap<Character, Character>() {{
+        Map<Character, Character> oppositeDirs = new HashMap<Character, Character>() {{
             put('D', 'U');
             put('U', 'D');
             put('R', 'L');
@@ -110,6 +118,7 @@ public class ChickenDungeon {
 
 
 
+    // creates a room based on a room type number, direction came from, and start coordinates (close bottom right corner)
     public void createRoom(int roomTypeNum, char direction, int startX, int startY, int startZ) {
 
         final int xSize;
@@ -118,10 +127,15 @@ public class ChickenDungeon {
 
         World world = Bukkit.getWorld("world_dungeons");
 
+        // for each room, set the room size
+        // then check if we have generated the map for this room before
+        // if not, then generate it for the first time
+        // otherwise, use the previously generated map to optimize runtime
         if (roomTypeNum == 0) {
             xSize = 10;
             ySize = 6;
             zSize = 10;
+
             if (!roomsCreated[0]) {
                 Material[][][] room1 = new Material[10][6][10];
 
@@ -173,6 +187,9 @@ public class ChickenDungeon {
             zSize = 10;
         }
 
+        // using the room map, generate the actual room
+        // one layer at a time, from bottom y to top y
+        // to prevent lag spikes / crashing from generating many blocks at once
         new BukkitRunnable() {
             private int y = 0;
             @Override
@@ -182,6 +199,13 @@ public class ChickenDungeon {
                     for (int z = 0; z < zSize; z++) {
                         Location blockLocation = new Location(world, startX + x, startY + y, startZ + z);
                         blockLocation.getBlock().setType(roomLayout[x][y][z]);
+
+                        // prevent leaves from decaying
+                        if (blockLocation.getBlock().getType() == Material.ACACIA_LEAVES) {
+                            Leaves leaves = (Leaves) blockLocation.getBlock().getBlockData();
+                            leaves.setPersistent(true);
+                            blockLocation.getBlock().setBlockData(leaves);
+                        }
                     }
                 }
 
@@ -192,61 +216,58 @@ public class ChickenDungeon {
                         dungeonEntity.spawnMob();
                     }
 
+                    // make the doorway based on the direction this room is entered from
                     if (direction == 'U') {
-                        Location blockLocation = new Location(world, startX + xSize / 2, startY + 1, startZ);
-                        // System.out.println("Direction: " + direction + " START: (" + startX + ", " + startY + ", " + startZ + ") zSize: " + zSize + "\nCurrent Doorway Locations:\n(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 1, startZ - 1);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 2, startZ);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 2, startZ - 1);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
+                        int thisX = startX + xSize / 2 - 1;
+                        int thisY = startY + 1;
+                        int thisZ = startZ - 1;
+                        for (int a = 0; a < 2; a++) {
+                            for (int b = 0; b < 3; b++) {
+                                for (int c = 0; c < 2; c++) {
+                                    Location blockLocation = new Location(world, thisX + a, thisY + b, thisZ + c);
+                                    blockLocation.getBlock().setType(Material.AIR);
+                                }
+                            }
+                        }
                     }
                     else if (direction == 'D') {
-                        Location blockLocation = new Location(world, startX + xSize / 2, startY + 1, startZ + zSize);
-                        // System.out.println("Direction: " + direction + " START: (" + startX + ", " + startY + ", " + startZ + ") zSize: " + zSize + "\nCurrent Doorway Locations:\n(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 1, startZ + zSize - 1);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 2, startZ + zSize);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize / 2, startY + 2, startZ + zSize - 1);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
+                        int thisX = startX + xSize / 2 - 1;
+                        int thisY = startY + 1;
+                        int thisZ = startZ + zSize - 1;
+                        for (int a = 0; a < 2; a++) {
+                            for (int b = 0; b < 3; b++) {
+                                for (int c = 0; c < 2; c++) {
+                                    Location blockLocation = new Location(world, thisX + a, thisY + b, thisZ + c);
+                                    blockLocation.getBlock().setType(Material.AIR);
+                                }
+                            }
+                        }
                     }
                     else if (direction == 'L') {
-                        Location blockLocation = new Location(world, startX, startY + 1, startZ + zSize / 2);
-                        // System.out.println("Direction: " + direction + " START: (" + startX + ", " + startY + ", " + startZ + ") zSize: " + zSize + "\nCurrent Doorway Locations:\n(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX - 1, startY + 1, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX, startY + 2, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX - 1, startY + 2, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
+                        int thisX = startX - 1;
+                        int thisY = startY + 1;
+                        int thisZ = startZ + zSize / 2 - 1;
+                        for (int a = 0; a < 2; a++) {
+                            for (int b = 0; b < 3; b++) {
+                                for (int c = 0; c < 2; c++) {
+                                    Location blockLocation = new Location(world, thisX + a, thisY + b, thisZ + c);
+                                    blockLocation.getBlock().setType(Material.AIR);
+                                }
+                            }
+                        }
                     }
                     else if (direction == 'R') {
-                        Location blockLocation = new Location(world, startX + xSize, startY + 1, startZ + zSize / 2);
-                        // System.out.println("Direction: " + direction + " START: (" + startX + ", " + startY + ", " + startZ + ") zSize: " + zSize + "\nCurrent Doorway Locations:\n(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize - 1, startY + 1, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize, startY + 2, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
-                        blockLocation = new Location(world, startX + xSize - 1, startY + 2, startZ + zSize / 2);
-                        // System.out.println("(" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + ", " + blockLocation.getBlockZ() + ")");
-                        blockLocation.getBlock().setType(Material.AIR);
+                        int thisX = startX + xSize - 1;
+                        int thisY = startY + 1;
+                        int thisZ = startZ + zSize / 2 - 1;
+                        for (int a = 0; a < 2; a++) {
+                            for (int b = 0; b < 3; b++) {
+                                for (int c = 0; c < 2; c++) {
+                                    Location blockLocation = new Location(world, thisX + a, thisY + b, thisZ + c);
+                                    blockLocation.getBlock().setType(Material.AIR);
+                                }
+                            }
+                        }
                     }
 
                     this.cancel();
