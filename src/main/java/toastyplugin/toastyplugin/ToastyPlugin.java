@@ -32,6 +32,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
     // <player UUID, <entity death location, saved inventory (loot)>>
     public Map<UUID, Vector<HashMap<Location, Inventory>>> lootInventories = new ConcurrentHashMap<>();
     public Map<UUID, LinkedList<ItemStack>> stashItems = new ConcurrentHashMap<>();
+    public Map<UUID, Vector<Location>> removeLootChestTasks = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -46,6 +47,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         this.getCommand("giveitem").setExecutor(new GiveItemCommand(this));
         this.getCommand("dungeon").setExecutor(new GenerateDungeonCommand(this));
         this.getCommand("pickupstash").setExecutor(new PickUpStashCommand(this));
+        this.getCommand("clearblocks").setExecutor(new ClearBlocksCommand(this));
 
         // event listeners
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);

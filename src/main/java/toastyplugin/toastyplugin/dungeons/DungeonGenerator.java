@@ -17,7 +17,7 @@ import java.util.Vector;
 
 public class DungeonGenerator {
 
-    private static Map<String, Vector<Vector<DungeonDimensions>>> dungeonsToClear = new HashMap<>();
+    public static Map<String, Vector<Vector<DungeonDimensions>>> dungeonsToClear = new HashMap<>();
 
     public static Location generateDungeon(ToastyPlugin plugin, String dungeonName) {
         if (dungeonName.equals("Chicken's Den")) {
@@ -35,8 +35,7 @@ public class DungeonGenerator {
     public static Location generateChickenDen(ToastyPlugin plugin, int startX, int startY, int startZ) {
 
         ChickenDungeon chickenDungeon = new ChickenDungeon(plugin, startX, startY, startZ);
-        dungeonsToClear.get("Chicken's Den").add(chickenDungeon.getRoomDimensions());
-        return new Location(Bukkit.getWorld("world_dungeons"), startX + 2, startY + 2, startZ + 2);
+        return new Location(Bukkit.getWorld("world_dungeons"), startX + 4.5, startY + 1, startZ + 4.5);
 
     }
 
@@ -47,10 +46,10 @@ public class DungeonGenerator {
         for (Vector<Vector<DungeonDimensions>> dungeonVector : dungeonsToClear.values()) {
             for (Vector<DungeonDimensions> roomVector : dungeonVector) {
                 for (DungeonDimensions room : roomVector) {
-                    for (int x = room.getStartX(); x < room.getXSize(); x++) {
-                        for (int y = room.getStartY(); y < room.getYSize(); y++) {
-                            for (int z = room.getStartZ(); z < room.getZSize(); z++) {
-                                Location blockLocation = new Location(world, x, y, z);
+                    for (int x = 0; x < room.getXSize(); x++) {
+                        for (int y = 0; y < room.getYSize(); y++) {
+                            for (int z = 0; z < room.getZSize(); z++) {
+                                Location blockLocation = new Location(world, x + room.getStartX(), y + room.getStartY(), z + room.getStartZ());
                                 blockLocation.getBlock().setType(Material.AIR);
                             }
                         }

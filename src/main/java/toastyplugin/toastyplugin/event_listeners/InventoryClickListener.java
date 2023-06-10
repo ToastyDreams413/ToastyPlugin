@@ -42,6 +42,11 @@ public class InventoryClickListener implements Listener {
                 event.setCancelled(true); // prevents taking the item
 
                 if (((CustomInventoryHolder) inventory.getHolder()).getName().equals("Loot")) {
+
+                    if (event.getClickedInventory() == player.getInventory()) {
+                        return;
+                    }
+
                     HashMap<Integer, ItemStack> remainingItems = player.getInventory().addItem(clickedItem);
                     LinkedList<ItemStack> stashedItems = plugin.stashItems.getOrDefault(player.getUniqueId(), new LinkedList<>());
 

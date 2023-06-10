@@ -18,3 +18,5 @@ commands:
     description: generates a dungeon.
   pickupstash:
     description: picks up stash.
+  clearblocks:
+    description: clears blocks.

@@ -1,7 +1,13 @@
 package toastyplugin.toastyplugin.event_listeners;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.BlockPosition;
+import com.comphenix.protocol.wrappers.WrappedBlockData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,6 +24,7 @@ import toastyplugin.toastyplugin.ToastyPlugin;
 import toastyplugin.toastyplugin.data.WandData;
 import toastyplugin.toastyplugin.gui.CustomInventoryHolder;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class InteractionListener implements Listener {
@@ -66,11 +73,27 @@ public class InteractionListener implements Listener {
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
 
+            Location location = event.getClickedBlock().getLocation();
+
             // chest looting
             if (plugin.lootInventories.containsKey(player.getUniqueId())) {
                 for (HashMap<Location, Inventory> currentLoot : plugin.lootInventories.get(player.getUniqueId())) {
-                    if (currentLoot.containsKey(event.getClickedBlock().getLocation())) {
-                        event.getPlayer().openInventory(currentLoot.get(event.getClickedBlock().getLocation()));
+                    if (currentLoot.containsKey(location)) {
+
+                        Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+                            @Override
+                            public void run() {
+                                PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+                                packet.getBlockPositionModifier().write(0, new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+                                BlockData blockData = Material.BLACK_WOOL.createBlockData();
+                                packet.getBlockData().write(0, WrappedBlockData.createData(blockData));
+                                ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+                            }
+                        }, 1L);
+
+                        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                            event.getPlayer().openInventory(currentLoot.get(event.getClickedBlock().getLocation()));
+                        }
                     }
                 }
             }
