@@ -26,12 +26,12 @@ public class PlayerQuitListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        BukkitTask task = plugin.playersActionBarTasks.get(player.getUniqueId());
+        BukkitTask task = plugin.playerTasks.get(player.getUniqueId());
 
         // Cancel the task
         if (task != null) {
             task.cancel();
-            plugin.playersActionBarTasks.remove(player.getUniqueId());
+            plugin.playerTasks.remove(player.getUniqueId());
         }
 
     }

@@ -20,3 +20,5 @@ commands:
     description: picks up stash.
   clearblocks:
     description: clears blocks.
+  cleardungeons:
+    description: clears dungeons.

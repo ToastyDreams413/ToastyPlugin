@@ -43,7 +43,12 @@ public class SetSpawnCommand implements CommandExecutor {
         plugin.getConfig().set(worldName + ".spawn.z", location.getZ());
         plugin.getConfig().set(worldName + ".spawn.yaw", location.getYaw());
         plugin.getConfig().set(worldName + ".spawn.pitch", location.getPitch());
-        plugin.saveConfig();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                plugin.saveConfig();
+            }
+        });
 
         player.sendMessage("Spawn location set!");
 

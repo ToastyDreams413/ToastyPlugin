@@ -11,6 +11,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 import toastyplugin.toastyplugin.commands.*;
+import toastyplugin.toastyplugin.dungeons.DungeonEntity;
 import toastyplugin.toastyplugin.dungeons.DungeonGenerator;
 import toastyplugin.toastyplugin.event_listeners.*;
 import toastyplugin.toastyplugin.items.weapons.CustomBow;
@@ -22,17 +23,16 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
 
     private FileConfiguration config;
 
-    public Map<UUID, Vector<UUID>> lootChests = new HashMap<>();
-
     // <entity UUID, <player UUID, total damage dealt>>
     public Map<UUID, HashMap<UUID, Double>> playerDamage = new ConcurrentHashMap<>();
-    public Map<Location, UUID> mobDeathLocations = new ConcurrentHashMap<>();
-    public Map<UUID, BukkitTask> playersActionBarTasks = new ConcurrentHashMap<>();
+    public Map<UUID, BukkitTask> playerTasks = new ConcurrentHashMap<>();
 
     // <player UUID, <entity death location, saved inventory (loot)>>
     public Map<UUID, Vector<HashMap<Location, Inventory>>> lootInventories = new ConcurrentHashMap<>();
     public Map<UUID, LinkedList<ItemStack>> stashItems = new ConcurrentHashMap<>();
     public Map<UUID, Vector<Location>> removeLootChestTasks = new ConcurrentHashMap<>();
+
+
 
     @Override
     public void onEnable() {
@@ -48,6 +48,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         this.getCommand("dungeon").setExecutor(new GenerateDungeonCommand(this));
         this.getCommand("pickupstash").setExecutor(new PickUpStashCommand(this));
         this.getCommand("clearblocks").setExecutor(new ClearBlocksCommand(this));
+        this.getCommand("cleardungeons").setExecutor(new ClearDungeonsCommand(this));
 
         // event listeners
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
@@ -72,11 +73,19 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
             Bukkit.createWorld(worldCreator);
         }
 
+        World world = Bukkit.getWorld("world");
+        world.setGameRuleValue("naturalRegeneration", "false");
+        World world2 = Bukkit.getWorld("world_dungeons");
+        world2.setGameRuleValue("naturalRegeneration", "false");
+
         getLogger().info("ToastyPlugin has been enabled!");
     }
 
     @Override
     public void onDisable() {
+        // clear dungeons
+        DungeonGenerator.clearDungeons();
+
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 // remove all custom armor stands that are used for text/timers/etc
@@ -94,16 +103,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
                     entity.remove();
                 }
             }
-
-            // remove all loot chests
-            for (Location chestLocation : mobDeathLocations.keySet()) {
-                if (chestLocation.getBlock().getType() == Material.CHEST) {
-                    chestLocation.getBlock().setType(Material.AIR);
-                }
-            }
         }
-
-        DungeonGenerator.clearDungeons();
 
         getLogger().info("ToastyPlugin has been disabled!");
     }

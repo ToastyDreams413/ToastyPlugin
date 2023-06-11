@@ -33,6 +33,7 @@ public class ChickenDungeon {
         this.plugin = plugin;
 
         startCoords = new DungeonDimensions(startX, startY, startZ);
+
         roomsCreated = new boolean[6];
         for (int i = 0; i < 6; i++) {
             roomsCreated[i] = false;
@@ -40,7 +41,7 @@ public class ChickenDungeon {
 
         lengthToBoss = (int) (Math.random() * 2) + 3;
         String correctPath = generateCorrectPath(lengthToBoss);
-        // System.out.println("Correct Path: " + correctPath);
+        System.out.println("Correct Path: " + correctPath);
         createDungeon(correctPath);
 
     }
@@ -58,28 +59,31 @@ public class ChickenDungeon {
         for (int i = 0; i < path.length(); i++) {
             int roomType = 0;
             if (i != 0) {
-                roomType = (int) (Math.random() * 1);
+                roomType = (int) (Math.random() * 2);
             }
             int[] currentDimensions = getDimensions(roomType);
             if (i != 0) {
                 int[] prevDimensions = getDimensions(prevRoomType);
+                System.out.println("curDimensions: (" + currentDimensions[0] + ", " + currentDimensions[1] + ", " + currentDimensions[2] + ")");
+                System.out.println("prevDimensions: (" + prevDimensions[0] + ", " + prevDimensions[1] + ", " + prevDimensions[2] + ")");
                 if (path.charAt(i) == 'U') {
                     curX = curX + prevDimensions[0] / 2 - currentDimensions[0] / 2;
                     curZ += prevDimensions[2];
                 }
                 else if (path.charAt(i) == 'D') {
                     curX = curX + prevDimensions[0] / 2 - currentDimensions[0] / 2;
-                    curZ -= prevDimensions[2];
+                    curZ -= currentDimensions[2];
                 }
                 else if (path.charAt(i) == 'L') {
                     curX += prevDimensions[0];
                     curZ = curZ + prevDimensions[2] / 2 - currentDimensions[2] / 2;
                 }
                 else if (path.charAt(i) == 'R') {
-                    curX -= prevDimensions[0];
+                    curX -= currentDimensions[0];
                     curZ = curZ + prevDimensions[2] / 2 - currentDimensions[2] / 2;
                 }
             }
+            System.out.println("Starting coords: (" + curX + ", " + curY + ", " + curZ + ")");
             createRoom(roomType, path.charAt(i), curX, curY, curZ);
             prevRoomType = roomType;
             roomDimensions.add(new DungeonDimensions(curX, curY, curZ, currentDimensions[0], currentDimensions[1], currentDimensions[2]));
@@ -198,13 +202,13 @@ public class ChickenDungeon {
         }
 
         else if (roomTypeNum == 1) {
-            int xSize = 15;
+            int xSize = 16;
             int ySize = 10;
-            int zSize = 15;
+            int zSize = 16;
 
-            xSizes.put(0, xSize);
-            ySizes.put(0, ySize);
-            zSizes.put(0, zSize);
+            xSizes.put(1, xSize);
+            ySizes.put(1, ySize);
+            zSizes.put(1, zSize);
 
             if (!roomsCreated[1]) {
                 Material[][][] room = new Material[xSize][ySize][zSize];
@@ -233,7 +237,7 @@ public class ChickenDungeon {
                 }
 
                 // set walls of the room
-                for (int i = 0; i < 15; i++) {
+                for (int i = 0; i < 16; i++) {
                     for (int y = 1; y < ySize - 1; y++) {
                         room[i][y][0] = Material.DIRT;
                         room[i][y][zSize - 1] = Material.DIRT;
@@ -283,37 +287,34 @@ public class ChickenDungeon {
             private int y = 0;
             @Override
             public void run() {
-                System.out.println("RealRoomNum: " + realRoomNum);
-                Material[][][] roomLayout = roomMaps.get(realRoomNum);
-                System.out.println("xSize: " + roomLayout.length + " ySize: " + roomLayout[0].length + " zSize: " + roomLayout[0][0].length);
-                int xSize = xSizes.get(roomTypeNum);
                 int ySize = ySizes.get(roomTypeNum);
+                int xSize = xSizes.get(roomTypeNum);
                 int zSize = zSizes.get(roomTypeNum);
-                for (int x = 0; x < xSize; x++) {
-                    for (int z = 0; z < zSize; z++) {
-                        Location blockLocation = new Location(world, startX + x, startY + y, startZ + z);
-                        if (x == 10 || y == 10 || z == 10) {
-                            System.out.println("roomType: " + roomTypeNum + " sizes: (" + xSize + ", " + ySize + ", " + zSize + " x y z: (" + x + ", " + y + ", " + z + " curLoc: (" + blockLocation.getBlockX() + ", " + blockLocation.getBlockY() + "," + blockLocation.getBlockZ() + ")");
-                        }
-                        blockLocation.getBlock().setType(roomLayout[x][y][z]);
+                if (y < ySize) {
+                    Material[][][] roomLayout = roomMaps.get(realRoomNum);
+                    for (int x = 0; x < xSize; x++) {
+                        for (int z = 0; z < zSize; z++) {
+                            Location blockLocation = new Location(world, startX + x, startY + y, startZ + z);
+                            blockLocation.getBlock().setType(roomLayout[x][y][z]);
 
-                        // prevent leaves from decaying
-                        if (blockLocation.getBlock().getType() == Material.ACACIA_LEAVES || blockLocation.getBlock().getType() == Material.OAK_LEAVES) {
-                            Leaves leaves = (Leaves) blockLocation.getBlock().getBlockData();
-                            leaves.setPersistent(true);
-                            blockLocation.getBlock().setBlockData(leaves);
+                            // prevent leaves from decaying
+                            if (blockLocation.getBlock().getType() == Material.ACACIA_LEAVES || blockLocation.getBlock().getType() == Material.OAK_LEAVES) {
+                                Leaves leaves = (Leaves) blockLocation.getBlock().getBlockData();
+                                leaves.setPersistent(true);
+                                blockLocation.getBlock().setBlockData(leaves);
+                            }
                         }
                     }
+                    y++;
                 }
 
-                y++;
+                else {
 
-                System.out.println("y: " + y + " ySize: " + ySize);
-
-                if (y >= ySize) {
+                    /*
                     for (DungeonEntity dungeonEntity : roomEntities.get(roomTypeNum)) {
                         dungeonEntity.spawnMob();
                     }
+                    */
 
                     // make the doorway based on the direction this room is entered from
                     if (direction == 'U') {
@@ -386,16 +387,11 @@ public class ChickenDungeon {
             res[2] = 10;
         }
         else if (roomType == 1) {
-            res[0] = 15;
+            res[0] = 16;
             res[1] = 10;
-            res[2] = 15;
+            res[2] = 16;
         }
         return res;
-    }
-
-
-    public Vector<DungeonDimensions> getRoomDimensions() {
-        return roomDimensions;
     }
 
 }

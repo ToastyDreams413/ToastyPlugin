@@ -56,6 +56,7 @@ public class DungeonGenerator {
                     }
                 }
             }
+            dungeonsToClear.remove(dungeonVector);
         }
 
         for (Entity entity : world.getEntities()) {

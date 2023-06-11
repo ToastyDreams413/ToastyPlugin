@@ -43,6 +43,12 @@ public class SetRankCommand implements CommandExecutor {
                     }
                 }
                 plugin.getConfig().set(targetPlayer.getUniqueId() + ".rank", rankName);
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        plugin.saveConfig();
+                    }
+                });
                 sender.sendMessage(ChatColor.GREEN + "Player " + args[0] + "'s rank has been set to " + rankName);
             }
             else {

@@ -60,6 +60,7 @@ public class ClearBlocksCommand implements CommandExecutor {
                     }
                 }
             }
+            player.sendMessage(ChatColor.GREEN + "Successfully cleared all blocks in a radius of " + radius + "!");
         }
 
         return true;

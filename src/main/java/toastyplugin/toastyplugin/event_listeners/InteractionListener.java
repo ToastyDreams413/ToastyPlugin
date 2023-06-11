@@ -36,34 +36,7 @@ public class InteractionListener implements Listener {
         this.plugin = plugin;
     }
 
-    private UUID getMobUniqueIdFromLocation(Location location) {
-        for (Location storedLocation : plugin.mobDeathLocations.keySet()) {
-            if (storedLocation.getBlockX() == location.getBlockX()
-                    && storedLocation.getBlockY() == location.getBlockY()
-                    && storedLocation.getBlockZ() == location.getBlockZ()) {
-                return plugin.mobDeathLocations.get(storedLocation);
-            }
-        }
-        return null;
-    }
 
-    public boolean didEnoughDamage(UUID entityUniqueId, UUID playerUniqueId, int damageThreshold) {
-        if (plugin.playerDamage.containsKey(entityUniqueId)) {
-            if (plugin.playerDamage.get(entityUniqueId).containsKey(playerUniqueId)) {
-                return plugin.playerDamage.get(entityUniqueId).get(playerUniqueId) > damageThreshold;
-            }
-        }
-        return false;
-    }
-
-    public boolean playerAlreadyLooted(UUID entityUniqueId, UUID playerUniqueId) {
-        for (UUID storedUniqueId : plugin.lootChests.get(entityUniqueId)) {
-            if (storedUniqueId.equals(playerUniqueId)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
