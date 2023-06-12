@@ -45,6 +45,9 @@ public class MobDeathListener implements Listener {
                 Location deathLocation = event.getEntity().getLocation();
 
                 int c = 1;
+                if (plugin.playerDamage.get(event.getEntity().getUniqueId()) == null) {
+                    return;
+                }
                 for (UUID playerUniqueId : plugin.playerDamage.get(event.getEntity().getUniqueId()).keySet()) {
                     if (plugin.playerDamage.get(event.getEntity().getUniqueId()).get(playerUniqueId) > 0) {
                         spawnChest(event.getEntity(), Bukkit.getServer().getPlayer(playerUniqueId), deathLocation);

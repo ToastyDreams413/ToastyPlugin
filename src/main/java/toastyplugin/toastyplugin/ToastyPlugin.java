@@ -1,6 +1,14 @@
 package toastyplugin.toastyplugin;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.Inventory;
@@ -31,6 +39,8 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
     public Map<UUID, Vector<HashMap<Location, Inventory>>> lootInventories = new ConcurrentHashMap<>();
     public Map<UUID, LinkedList<ItemStack>> stashItems = new ConcurrentHashMap<>();
     public Map<UUID, Vector<Location>> removeLootChestTasks = new ConcurrentHashMap<>();
+    public Vector<ArmorStand> aliveMobs = new Vector<>();
+    public Vector<Player> joinedPlayers = new Vector<>();
 
 
 
@@ -74,9 +84,11 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         }
 
         World world = Bukkit.getWorld("world");
-        world.setGameRuleValue("naturalRegeneration", "false");
+        world.setGameRule(GameRule.NATURAL_REGENERATION, false);
+        world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
         World world2 = Bukkit.getWorld("world_dungeons");
-        world2.setGameRuleValue("naturalRegeneration", "false");
+        world2.setGameRule(GameRule.NATURAL_REGENERATION, false);
+        world2.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
 
         getLogger().info("ToastyPlugin has been enabled!");
     }
@@ -86,10 +98,20 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         // clear dungeons
         DungeonGenerator.clearDungeons();
 
+        // remove all custom mobs
+        for (ArmorStand armorStand : aliveMobs) {
+            armorStand.remove();
+        }
+
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 // remove all custom armor stands that are used for text/timers/etc
                 if (entity instanceof ArmorStand && entity.getCustomName() != null) {
+                    entity.remove();
+                }
+
+                // remove custom projectiles
+                if (entity instanceof FallingBlock) {
                     entity.remove();
                 }
 

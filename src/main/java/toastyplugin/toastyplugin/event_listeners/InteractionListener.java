@@ -46,6 +46,8 @@ public class InteractionListener implements Listener {
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
 
+            // System.out.println("RIGHT CLICKED!");
+
             Location location = event.getClickedBlock().getLocation();
 
             // chest looting

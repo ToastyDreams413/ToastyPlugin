@@ -51,7 +51,7 @@ public class WarpCommand implements CommandExecutor, TabCompleter {
                     Location location = new Location(world, x, y, z, yaw, pitch);
                     player.teleport(location);
 
-                    player.sendMessage("Warped to spawn of world \"" + worldName + "\"!");
+                    player.sendMessage("Warped to spawn!");
                 } else {
                     player.sendMessage("The spawn location is not set!");
                 }

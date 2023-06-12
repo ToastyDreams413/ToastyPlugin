@@ -1,10 +1,11 @@
 package toastyplugin.toastyplugin.dungeons;
 
 import org.bukkit.*;
+import org.bukkit.block.data.Orientable;
 import org.bukkit.block.data.type.Leaves;
+import org.bukkit.block.data.type.Stairs;
 import org.bukkit.scheduler.BukkitRunnable;
 import toastyplugin.toastyplugin.ToastyPlugin;
-import toastyplugin.toastyplugin.mobs.CustomZombie;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Vector;
 public class ChickenDungeon {
 
     private static boolean[] roomsCreated;
-    private static Map<Integer, Material[][][]> roomMaps = new HashMap<>();
+    private static Map<Integer, BlockInfo[][][]> roomMaps = new HashMap<>();
     private static Map<Integer, Vector<DungeonEntity>> roomEntities = new HashMap<>();
     private static Map<Integer, Integer> xSizes = new HashMap<>();
     private static Map<Integer, Integer> ySizes = new HashMap<>();
@@ -41,7 +42,7 @@ public class ChickenDungeon {
 
         lengthToBoss = (int) (Math.random() * 2) + 3;
         String correctPath = generateCorrectPath(lengthToBoss);
-        System.out.println("Correct Path: " + correctPath);
+        // System.out.println("Correct Path: " + correctPath);
         createDungeon(correctPath);
 
     }
@@ -64,8 +65,8 @@ public class ChickenDungeon {
             int[] currentDimensions = getDimensions(roomType);
             if (i != 0) {
                 int[] prevDimensions = getDimensions(prevRoomType);
-                System.out.println("curDimensions: (" + currentDimensions[0] + ", " + currentDimensions[1] + ", " + currentDimensions[2] + ")");
-                System.out.println("prevDimensions: (" + prevDimensions[0] + ", " + prevDimensions[1] + ", " + prevDimensions[2] + ")");
+                // System.out.println("curDimensions: (" + currentDimensions[0] + ", " + currentDimensions[1] + ", " + currentDimensions[2] + ")");
+                // System.out.println("prevDimensions: (" + prevDimensions[0] + ", " + prevDimensions[1] + ", " + prevDimensions[2] + ")");
                 if (path.charAt(i) == 'U') {
                     curX = curX + prevDimensions[0] / 2 - currentDimensions[0] / 2;
                     curZ += prevDimensions[2];
@@ -83,7 +84,7 @@ public class ChickenDungeon {
                     curZ = curZ + prevDimensions[2] / 2 - currentDimensions[2] / 2;
                 }
             }
-            System.out.println("Starting coords: (" + curX + ", " + curY + ", " + curZ + ")");
+            // System.out.println("Starting coords: (" + curX + ", " + curY + ", " + curZ + ")");
             createRoom(roomType, path.charAt(i), curX, curY, curZ);
             prevRoomType = roomType;
             roomDimensions.add(new DungeonDimensions(curX, curY, curZ, currentDimensions[0], currentDimensions[1], currentDimensions[2]));
@@ -128,6 +129,63 @@ public class ChickenDungeon {
 
 
 
+    public String generateCorrectPathWithRooms(int numRooms) {
+
+        String correctPathString = "";
+        Map<Integer, Character> numToDir = new HashMap<Integer, Character>() {{
+            put(0, 'U');
+            put(1, 'D');
+            put(2, 'L');
+            put(3, 'R');
+        }};
+
+        Map<Character, Character> oppositeDirs = new HashMap<Character, Character>() {{
+            put('D', 'U');
+            put('U', 'D');
+            put('R', 'L');
+            put('L', 'R');
+        }};
+
+
+
+        for (int i = 0; i < numRooms; i++) {
+
+            if (i == 0) {
+                correctPathString += "0";
+            }
+
+            int roomTypeNum = (int) (Math.random() * 2);
+
+            // should be renamed to curDirNum
+            int curRoomNum = (int) (Math.random() * 4);
+            if (numToDir.get(curRoomNum) == oppositeDirs.get(correctPathString.charAt(correctPathString.length() - 1))) {
+                curRoomNum += (int) (Math.random() * 3) + 1;
+                curRoomNum %= 4;
+            }
+            correctPathString += numToDir.get(curRoomNum);
+        }
+
+        return correctPathString;
+
+    }
+
+
+
+    private boolean intersects(int startX, int startZ, int roomTypeNum, Vector<TwoDimensionalRoomCoords> roomCoords) {
+        int x1 = startX;
+        int x2 = startX + getDimensions(roomTypeNum)[0];
+        int z1 = startZ;
+        int z2 = startZ + getDimensions(roomTypeNum)[2];
+        for (TwoDimensionalRoomCoords curRoomCoords : roomCoords) {
+            if (!(x1 > curRoomCoords.getX2() || curRoomCoords.getX1() > x2 || z1 > curRoomCoords.getZ2() || curRoomCoords.getZ1() > z2)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+
     // creates a room based on a room type number, direction came from, and start coordinates (close bottom right corner)
     public void createRoom(int roomTypeNum, char direction, int startX, int startY, int startZ) {
 
@@ -139,145 +197,143 @@ public class ChickenDungeon {
         // then check if we have generated the map for this room before
         // if not, then generate it for the first time
         // otherwise, use the previously generated map to optimize runtime
-        if (roomTypeNum == 0) {
+        if (roomTypeNum == 0 && !roomsCreated[0]) {
 
-            if (!roomsCreated[0]) {
-                int xSize = 10;
-                int ySize = 6;
-                int zSize = 10;
+            int xSize = 10;
+            int ySize = 6;
+            int zSize = 10;
 
-                xSizes.put(0, xSize);
-                ySizes.put(0, ySize);
-                zSizes.put(0, zSize);
+            xSizes.put(roomTypeNum, xSize);
+            ySizes.put(roomTypeNum, ySize);
+            zSizes.put(roomTypeNum, zSize);
 
-                Material[][][] room = new Material[xSize][ySize][zSize];
+            BlockInfo[][][] room = new BlockInfo[xSize][ySize][zSize];
 
-                // initialize everything as air
-                for (int x = 0; x < xSize; x++) {
-                    for (int y = 0; y < ySize; y++) {
-                        for (int z = 0; z < zSize; z++) {
-                            room[x][y][z] = Material.AIR;
-                        }
-                    }
-                }
-
-                // set floor and ceiling of the room
-                for (int x = 0; x < xSize; x++) {
+            // initialize everything as air
+            for (int x = 0; x < xSize; x++) {
+                for (int y = 0; y < ySize; y++) {
                     for (int z = 0; z < zSize; z++) {
-                        room[x][0][z] = Material.GRASS_BLOCK;
-                        room[x][ySize - 1][z] = Material.ACACIA_PLANKS;
+                        room[x][y][z] = new BlockInfo(Material.AIR);
                     }
                 }
-
-                // set walls of the room
-                for (int i = 0; i < 10; i++) {
-                    for (int y = 1; y < ySize - 1; y++) {
-                        room[i][y][0] = Material.DIRT;
-                        room[i][y][zSize - 1] = Material.DIRT;
-                        room[0][y][i] = Material.DIRT;
-                        room[xSize - 1][y][i] = Material.DIRT;
-                    }
-                }
-
-                // add some extra blocks for decoration
-                room[8][4][8] = Material.ACACIA_LEAVES;
-                room[7][4][8] = Material.ACACIA_LEAVES;
-                room[8][3][8] = Material.ACACIA_LEAVES;
-
-                // add torches for lighting
-                room[1][1][1] = Material.TORCH;
-                room[xSize - 2][1][1] = Material.TORCH;
-                room[1][1][zSize - 2] = Material.TORCH;
-                room[xSize - 2][1][zSize - 2] = Material.TORCH;
-
-                roomMaps.put(0, room);
-
-                Vector<DungeonEntity> dungeonEntities = new Vector<>();
-                dungeonEntities.add(new DungeonEntity());
-                roomEntities.put(0, dungeonEntities);
-
-                roomsCreated[0] = true;
             }
 
+            // set floor and ceiling of the room
+            for (int x = 0; x < xSize; x++) {
+                for (int z = 0; z < zSize; z++) {
+                    room[x][0][z] = new BlockInfo(Material.GRASS_BLOCK);
+                    room[x][ySize - 1][z] = new BlockInfo(Material.ACACIA_PLANKS);
+                }
+            }
+
+            // set walls of the room
+            for (int y = 1; y < ySize - 1; y++) {
+                for (int x = 0; x < xSize; x++) {
+                    room[x][y][0] = new BlockInfo(Material.DIRT); // this will set the wall to the RIGHT of the player
+                    room[x][y][zSize - 1] = new BlockInfo(Material.DIRT); // this will set the wall to the LEFT of the player
+                }
+                for (int z = 0; z < zSize; z++) {
+                    room[0][y][z] = new BlockInfo(Material.DIRT); // this will set the wall in FRONT of the player
+                    room[xSize - 1][y][z] = new BlockInfo(Material.DIRT); // this will set the wall BEHIND of the player
+                }
+            }
+
+            // add some extra blocks for decoration
+            room[8][4][8] = new BlockInfo(Material.ACACIA_LEAVES);
+            room[7][4][8] = new BlockInfo(Material.ACACIA_LEAVES);
+            room[8][3][8] = new BlockInfo(Material.ACACIA_LEAVES);
+
+            // add torches for lighting
+            room[1][1][1] = new BlockInfo(Material.TORCH);
+            room[xSize - 2][1][1] = new BlockInfo(Material.TORCH);
+            room[1][1][zSize - 2] = new BlockInfo(Material.TORCH);
+            room[xSize - 2][1][zSize - 2] = new BlockInfo(Material.TORCH);
+
+            roomMaps.put(roomTypeNum, room);
+
+            Vector<DungeonEntity> dungeonEntities = new Vector<>();
+            dungeonEntities.add(new DungeonEntity());
+            roomEntities.put(roomTypeNum, dungeonEntities);
+
+            roomsCreated[roomTypeNum] = true;
         }
 
-        else if (roomTypeNum == 1) {
+        else if (roomTypeNum == 1 && !roomsCreated[1]) {
             int xSize = 16;
             int ySize = 10;
             int zSize = 16;
 
-            xSizes.put(1, xSize);
-            ySizes.put(1, ySize);
-            zSizes.put(1, zSize);
+            xSizes.put(roomTypeNum, xSize);
+            ySizes.put(roomTypeNum, ySize);
+            zSizes.put(roomTypeNum, zSize);
 
-            if (!roomsCreated[1]) {
-                Material[][][] room = new Material[xSize][ySize][zSize];
+            BlockInfo[][][] room = new BlockInfo[xSize][ySize][zSize];
 
-                // initialize everything as air
-                for (int x = 0; x < xSize; x++) {
-                    for (int y = 0; y < ySize; y++) {
-                        for (int z = 0; z < zSize; z++) {
-                            room[x][y][z] = Material.AIR;
-                        }
-                    }
-                }
-
-                // set floor and ceiling of the room
-                for (int x = 0; x < xSize; x++) {
+            // initialize everything as air
+            for (int x = 0; x < xSize; x++) {
+                for (int y = 0; y < ySize; y++) {
                     for (int z = 0; z < zSize; z++) {
-                        int randomNum = (int) (Math.random() * 6);
-                        if (randomNum == 0) {
-                            room[x][0][z] = Material.COBBLESTONE;
-                        }
-                        else {
-                            room[x][0][z] = Material.GRASS_BLOCK;
-                        }
-                        room[x][ySize - 1][z] = Material.ACACIA_PLANKS;
+                        room[x][y][z] = new BlockInfo(Material.AIR);
                     }
                 }
-
-                // set walls of the room
-                for (int i = 0; i < 16; i++) {
-                    for (int y = 1; y < ySize - 1; y++) {
-                        room[i][y][0] = Material.DIRT;
-                        room[i][y][zSize - 1] = Material.DIRT;
-                        room[0][y][i] = Material.DIRT;
-                        room[xSize - 1][y][i] = Material.DIRT;
-                    }
-                }
-
-                // add decorations
-                for (int x = 0; x < xSize; x++) {
-                    for (int z = 0; z < zSize; z++) {
-                        int randomNum = (int) (Math.random() * 3);
-                        if (randomNum == 0) {
-                            room[x][ySize - 2][z] = Material.OAK_LEAVES;
-                        }
-                        else {
-                            room[x][ySize - 2][z] = Material.ACACIA_LEAVES;
-                        }
-                        randomNum = (int) (Math.random() * 6);
-                        if (randomNum == 0) {
-                            room[x][ySize - 3][z] = Material.OAK_LEAVES;
-                        }
-                    }
-                }
-
-                // add torches for lighting
-                room[1][1][1] = Material.TORCH;
-                room[xSize - 2][1][1] = Material.TORCH;
-                room[1][1][zSize - 2] = Material.TORCH;
-                room[xSize - 2][1][zSize - 2] = Material.TORCH;
-
-                roomMaps.put(1, room);
-
-                Vector<DungeonEntity> dungeonEntities = new Vector<>();
-                dungeonEntities.add(new DungeonEntity("Test Zombie", 8, 1, 8));
-                roomEntities.put(1, dungeonEntities);
-
-                roomsCreated[1] = true;
             }
 
+            // set floor and ceiling of the room
+            for (int x = 0; x < xSize; x++) {
+                for (int z = 0; z < zSize; z++) {
+                    int randomNum = (int) (Math.random() * 6);
+                    if (randomNum == 0) {
+                        room[x][0][z] = new BlockInfo(Material.COBBLESTONE);
+                    }
+                    else {
+                        room[x][0][z] = new BlockInfo(Material.GRASS_BLOCK);
+                    }
+                    room[x][ySize - 1][z] = new BlockInfo(Material.ACACIA_PLANKS);
+                }
+            }
+
+            // set walls of the room
+            for (int y = 1; y < ySize - 1; y++) {
+                for (int x = 0; x < xSize; x++) {
+                    room[x][y][0] = new BlockInfo(Material.DIRT); // this will set the wall to the RIGHT of the player
+                    room[x][y][zSize - 1] = new BlockInfo(Material.DIRT); // this will set the wall to the LEFT of the player
+                }
+                for (int z = 0; z < zSize; z++) {
+                    room[0][y][z] = new BlockInfo(Material.DIRT); // this will set the wall in FRONT of the player
+                    room[xSize - 1][y][z] = new BlockInfo(Material.DIRT); // this will set the wall BEHIND of the player
+                }
+            }
+
+            // add decorations
+            for (int x = 0; x < xSize; x++) {
+                for (int z = 0; z < zSize; z++) {
+                    int randomNum = (int) (Math.random() * 3);
+                    if (randomNum == 0) {
+                        room[x][ySize - 2][z] = new BlockInfo(Material.OAK_LEAVES);
+                    }
+                    else {
+                        room[x][ySize - 2][z] = new BlockInfo(Material.ACACIA_LEAVES);
+                    }
+                    randomNum = (int) (Math.random() * 6);
+                    if (randomNum == 0) {
+                        room[x][ySize - 3][z] = new BlockInfo(Material.OAK_LEAVES);
+                    }
+                }
+            }
+
+            // add torches for lighting
+            room[1][1][1] = new BlockInfo(Material.TORCH);
+            room[xSize - 2][1][1] = new BlockInfo(Material.TORCH);
+            room[1][1][zSize - 2] = new BlockInfo(Material.TORCH);
+            room[xSize - 2][1][zSize - 2] = new BlockInfo(Material.TORCH);
+
+            roomMaps.put(roomTypeNum, room);
+
+            Vector<DungeonEntity> dungeonEntities = new Vector<>();
+            dungeonEntities.add(new DungeonEntity("Test Zombie", 8, 1, 8));
+            roomEntities.put(roomTypeNum, dungeonEntities);
+
+            roomsCreated[roomTypeNum] = true;
         }
 
         // using the room map, generate the actual room
@@ -291,14 +347,30 @@ public class ChickenDungeon {
                 int xSize = xSizes.get(roomTypeNum);
                 int zSize = zSizes.get(roomTypeNum);
                 if (y < ySize) {
-                    Material[][][] roomLayout = roomMaps.get(realRoomNum);
+                    BlockInfo[][][] roomLayout = roomMaps.get(realRoomNum);
                     for (int x = 0; x < xSize; x++) {
                         for (int z = 0; z < zSize; z++) {
                             Location blockLocation = new Location(world, startX + x, startY + y, startZ + z);
-                            blockLocation.getBlock().setType(roomLayout[x][y][z]);
+                            blockLocation.getBlock().setType(roomLayout[x][y][z].getMaterial());
+
+                            // set log axis
+                            if (roomLayout[x][y][z].getLogAxis() != null) {
+                                Orientable orientable = (Orientable) blockLocation.getBlock().getBlockData();
+                                orientable.setAxis(roomLayout[x][y][z].getLogAxis());
+                                blockLocation.getBlock().setBlockData(orientable);
+                            }
+
+                            // set stairs direction and shape
+                            else if (roomLayout[x][y][z].getStairsDirection() != null) {
+                                Stairs stairs = (Stairs) blockLocation.getBlock().getBlockData();
+                                stairs.setFacing(roomLayout[x][y][z].getStairsDirection());
+                                stairs.setShape(roomLayout[x][y][z].getStairsShape());
+                                stairs.setHalf(roomLayout[x][y][z].getStairsBisectedHalf());
+                                blockLocation.getBlock().setBlockData(stairs);
+                            }
 
                             // prevent leaves from decaying
-                            if (blockLocation.getBlock().getType() == Material.ACACIA_LEAVES || blockLocation.getBlock().getType() == Material.OAK_LEAVES) {
+                            else if (blockLocation.getBlock().getType() == Material.ACACIA_LEAVES || blockLocation.getBlock().getType() == Material.OAK_LEAVES) {
                                 Leaves leaves = (Leaves) blockLocation.getBlock().getBlockData();
                                 leaves.setPersistent(true);
                                 blockLocation.getBlock().setBlockData(leaves);

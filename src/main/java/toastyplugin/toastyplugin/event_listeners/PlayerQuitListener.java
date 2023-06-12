@@ -26,6 +26,7 @@ public class PlayerQuitListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        plugin.joinedPlayers.remove(player);
         BukkitTask task = plugin.playerTasks.get(player.getUniqueId());
 
         // Cancel the task

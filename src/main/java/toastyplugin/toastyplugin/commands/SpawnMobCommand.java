@@ -11,6 +11,7 @@ import toastyplugin.toastyplugin.ToastyPlugin;
 import toastyplugin.toastyplugin.custom_classes.Rank;
 import toastyplugin.toastyplugin.data.ItemTypes;
 import toastyplugin.toastyplugin.mobs.CustomZombie;
+import toastyplugin.toastyplugin.mobs.MotherHen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +38,19 @@ public class SpawnMobCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 1) {
-            String mobName = args[0];
+        if (args.length >= 1) {
+            String mobName = "";
+            for (int i = 0; i < args.length; i++) {
+                mobName += args[i];
+                if (i != args.length - 1) {
+                    mobName += " ";
+                }
+            }
             if (mobName.equals("zombie1")) {
                 CustomZombie.spawnCustomZombie(player.getLocation());
+            }
+            else if (mobName.equals("Mother Hen")) {
+                MotherHen.spawnMotherHen(plugin, player.getLocation());
             }
         }
 
@@ -52,6 +62,7 @@ public class SpawnMobCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             List<String> mobNames = new ArrayList<>();
             mobNames.add("zombie1");
+            mobNames.add("Mother Hen");
             return mobNames;
         }
         return null;

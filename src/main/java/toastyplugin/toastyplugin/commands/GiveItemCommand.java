@@ -53,8 +53,9 @@ public class GiveItemCommand implements CommandExecutor, TabCompleter {
                 }
                 ItemStack customItem = CustomItem.createCustomItem(itemName);
                 if (customItem != null) {
-                    player.getInventory().addItem(customItem);
+                    targetPlayer.getInventory().addItem(customItem);
                     sender.sendMessage(ChatColor.GREEN + "You have given " + args[0] + " a " + itemName);
+                    targetPlayer.sendMessage(ChatColor.GREEN + "You have recieved a " + itemName + " from " + args[0] + "!");
                 }
                 else {
                     sender.sendMessage( ChatColor.RED + "Item not found.");

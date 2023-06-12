@@ -33,7 +33,7 @@ public class PlayerDataManager {
             plugin.getConfig().set(uuid + ".rank", "head admin");
         }
         else if (player.getName().equals("ToastyDreams")) {
-            plugin.getConfig().set(uuid + ".rank", "wifey");
+            plugin.getConfig().set(uuid + ".rank", "admin");
         }
         else {
             plugin.getConfig().set(uuid + ".rank", "member");
