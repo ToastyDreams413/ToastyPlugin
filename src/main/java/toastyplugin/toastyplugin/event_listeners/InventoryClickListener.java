@@ -77,10 +77,10 @@ public class InventoryClickListener implements Listener {
 
                 else if (((CustomInventoryHolder) inventory.getHolder()).getName().equals("Warp Menu")) {
                     player.closeInventory();
-                    if (clickedItem.getItemMeta().getCustomModelData() == 1) {
+                    if (clickedItem.getItemMeta().getCustomModelData() == 2) {
                         player.performCommand("warp spawn");
                     }
-                    else if (clickedItem.getItemMeta().getCustomModelData() == 2) {
+                    else if (clickedItem.getItemMeta().getCustomModelData() == 3) {
                         player.performCommand("warp dungeon hub");
                     }
                 }

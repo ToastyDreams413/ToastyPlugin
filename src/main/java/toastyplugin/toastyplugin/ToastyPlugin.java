@@ -39,7 +39,8 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
     public Map<UUID, Vector<HashMap<Location, Inventory>>> lootInventories = new ConcurrentHashMap<>();
     public Map<UUID, LinkedList<ItemStack>> stashItems = new ConcurrentHashMap<>();
     public Map<UUID, Vector<Location>> removeLootChestTasks = new ConcurrentHashMap<>();
-    public Vector<ArmorStand> aliveMobs = new Vector<>();
+    public Map<ArmorStand, Double> aliveMobs = new ConcurrentHashMap<>();
+    public Map<ArmorStand, Vector<BukkitTask>> aliveMobTasks = new ConcurrentHashMap<>();
     public Vector<Player> joinedPlayers = new Vector<>();
 
 
@@ -99,7 +100,7 @@ public final class ToastyPlugin extends JavaPlugin implements CommandExecutor {
         DungeonGenerator.clearDungeons();
 
         // remove all custom mobs
-        for (ArmorStand armorStand : aliveMobs) {
+        for (ArmorStand armorStand : aliveMobs.keySet()) {
             armorStand.remove();
         }
 

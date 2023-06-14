@@ -3,10 +3,7 @@ package toastyplugin.toastyplugin.event_listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -35,9 +32,9 @@ public class EntityDamagedListener implements Listener {
 
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        LivingEntity entity = (LivingEntity) event.getEntity();
         if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
             Player player = (Player) event.getDamager();
+            LivingEntity entity = (LivingEntity) event.getEntity();
             ItemStack item = player.getInventory().getItemInMainHand();
 
             if (item.getType() == Material.WOODEN_SWORD && item.getItemMeta().hasCustomModelData()) {

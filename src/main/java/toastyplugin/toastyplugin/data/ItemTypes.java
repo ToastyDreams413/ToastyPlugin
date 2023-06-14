@@ -7,6 +7,7 @@ public class ItemTypes {
 
     public static final Map<String, String> ITEM_TYPE = new HashMap<String, String>() {{
         put("Starter Sword", "sword");
+        put("Rusty Sword", "sword");
 
         put("Starter Wand", "wand");
 

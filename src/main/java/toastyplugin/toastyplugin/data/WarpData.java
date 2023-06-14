@@ -6,8 +6,8 @@ import java.util.Map;
 public class WarpData {
 
     public static final Map<String, Integer> WARP_MODEL_NUMBER = new HashMap<String, Integer>() {{
-        put("Spawn", 1);
-        put("Dungeon Hub", 2);
+        put("Spawn", 2);
+        put("Dungeon Hub", 3);
     }};
 
 }

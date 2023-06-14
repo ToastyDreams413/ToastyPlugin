@@ -6,16 +6,21 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import toastyplugin.toastyplugin.ToastyPlugin;
 
+import java.util.HashMap;
+import java.util.UUID;
+
 public class MotherHen {
 
-    public static void spawnMotherHen(ToastyPlugin plugin, Location location) {
+    public static void spawnMotherHen(ToastyPlugin plugin, Location location, int range, double projectileRadius) {
         ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
         armorStand.setVisible(false);
         armorStand.setGravity(false);
-        armorStand.setInvulnerable(true);
+        armorStand.setMarker(true);
+        // armorStand.setInvulnerable(true);
 
         ItemStack cobwebItem = new ItemStack(Material.COBWEB);
         ItemMeta meta = cobwebItem.getItemMeta();
@@ -23,99 +28,116 @@ public class MotherHen {
         cobwebItem.setItemMeta(meta);
 
         armorStand.getEquipment().setHelmet(cobwebItem);
-        plugin.aliveMobs.add(armorStand);
+        plugin.aliveMobs.put(armorStand, 100.0);
 
         // create a new BukkitRunnable to control the armor stand
-        new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                // Move the armor stand in a random direction
-                double x = Math.random() - 0.5;
-                double z = Math.random() - 0.5;
-                armorStand.teleport(armorStand.getLocation().add(x, 0, z));
-
-                // Check for players within 10 blocks
-                for (Entity entity : armorStand.getNearbyEntities(10, 10, 10)) {
-                    if (entity instanceof Player) {
-                        // Create a mini block at the armor stand's location
-                        FallingBlock block = armorStand.getWorld().spawnFallingBlock(
-                                armorStand.getLocation(),
-                                Material.DIAMOND_BLOCK.createBlockData()  // Use any material you want here
-                        );
-
-                        // configure the FallingBlock
-                        block.setGravity(false);
-                        block.setDropItem(false);
-                        block.setHurtEntities(true);
-                        Vector velocity = entity.getLocation().subtract(armorStand.getLocation()).toVector().normalize().multiply(0.3);
-
-                        block.setVelocity(velocity);
-
-                        // check for nearby players to damage them
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (!block.isValid()) {
-                                    this.cancel();
-                                    return;
-                                }
-
-                                for (Entity entity : block.getNearbyEntities(0.1, 0.1, 0.1)) {
-                                    if (entity instanceof Player) {
-                                        ((Player) entity).damage(1.0);
-                                        block.remove();
-                                        this.cancel();
-                                    }
-                                }
-
-                                // if it is about to collide with something, remove it
-                                Location nextLocation = block.getLocation().add(block.getVelocity());
-                                for (int x = -1; x <= 1; x++) {
-                                    for (int y = -1; y <= 1; y++) {
-                                        for (int z = -1; z <= 1; z++) {
-                                            Material adjacentBlockMaterial = nextLocation.clone().add(x, y, z).getBlock().getType();
-
-                                            if (adjacentBlockMaterial != Material.AIR) {
-                                                // The FallingBlock is about to collide with a non-air block, remove it.
-                                                block.remove();
-                                                this.cancel();
-                                                return;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }.runTaskTimer(plugin, 0L, 1L);
-
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (!block.isValid()) {
-                                    this.cancel();
-                                    return;
-                                }
-                                block.setVelocity(velocity);
-                            }
-                        }.runTaskTimer(plugin, 1L, 1L);  // Run every tick (20 ticks = 1 second)
-
-                        // check if reached range
-                        Location originalLocation = block.getLocation();
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (!block.isValid()) {
-                                    this.cancel();
-                                }
-                                if (block.getLocation().distance(originalLocation) > 10.0) {
-                                    block.remove();
-                                    this.cancel();
-                                }
-                            }
-                        }.runTaskTimer(plugin, 0L, 20L);
+                // check for the closest player within 10 blocks
+                Player closestPlayer = null;
+                double closestPlayerDistance = -1;
+                HashMap<UUID, Double> playerDistances = new HashMap<>();
+                for (Player player : plugin.joinedPlayers) {
+                    double currentDistance = Math.abs(player.getLocation().distance(armorStand.getLocation()));
+                    if (currentDistance < range && (currentDistance < closestPlayerDistance || closestPlayerDistance == -1)) {
+                        closestPlayer = player;
+                        closestPlayerDistance = currentDistance;
                     }
                 }
+
+                if (closestPlayer == null) {
+                    return;
+                }
+
+                // if the closest player is on the mob, don't actually shoot, just damage the player
+                if (closestPlayer.getLocation().equals(armorStand.getLocation())) {
+                    closestPlayer.damage(1.0);
+                    return;
+                }
+
+                // shoot at the nearest player using a FallingBlock
+                FallingBlock block = armorStand.getWorld().spawnFallingBlock(
+                        armorStand.getLocation().add(0, 0.975, 0),
+                        Material.DIAMOND_BLOCK.createBlockData()
+                );
+
+                // configure the FallingBlock
+                block.setCustomName("projectile");
+                block.setCustomNameVisible(false);
+                block.setGravity(false);
+                block.setDropItem(false);
+                block.setHurtEntities(true);
+                Vector velocity = closestPlayer.getLocation().add(0, 0.975, 0).subtract(armorStand.getLocation().add(0, 0.975, 0)).toVector().normalize().multiply(0.3);
+                block.setVelocity(velocity);
+                Location centeredBlockLocation = block.getLocation().add(0, 0.5, 0);
+
+                // check for nearby players to damage them
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+
+                        // move the armor stand randomly
+                        double x = (Math.random() - 0.5) / 10;
+                        double z = (Math.random() - 0.5) / 10;
+                        armorStand.teleport(armorStand.getLocation().add(x, 0, z));
+
+                        if (!block.isValid()) {
+                            this.cancel();
+                            return;
+                        }
+
+                        for (Player player : plugin.joinedPlayers) {
+                            if (Math.abs(player.getLocation().add(0, 0.975, 0).distance(centeredBlockLocation)) < projectileRadius) {
+                                player.damage(1.0);
+                                block.remove();
+                                this.cancel();
+                            }
+                        }
+
+                        // if it is about to collide with something, remove it
+                        Location nextLocation = centeredBlockLocation.add(block.getVelocity());
+                        if (nextLocation.getBlock().getType() != Material.AIR || centeredBlockLocation.getBlock().getType() != Material.AIR) {
+                            block.remove();
+                            this.cancel();
+                        }
+                    }
+                }.runTaskTimer(plugin, 0L, 1L);
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!block.isValid()) {
+                            this.cancel();
+                            return;
+                        }
+                        block.setVelocity(velocity);
+                    }
+                }.runTaskTimer(plugin, 1L, 1L);  // Run every tick (20 ticks = 1 second)
+
+                // check if reached range
+                Location originalLocation = block.getLocation();
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!block.isValid()) {
+                            this.cancel();
+                            return;
+                        }
+                        if (Math.abs(block.getLocation().distance(originalLocation)) > range) {
+                            block.remove();
+                            this.cancel();
+                            return;
+                        }
+                    }
+                }.runTaskTimer(plugin, 0L, 20L);
             }
+
         }.runTaskTimer(plugin, 0L, 20L);
+
+        java.util.Vector<BukkitTask> curTasks = plugin.aliveMobTasks.getOrDefault(armorStand, new java.util.Vector<>());
+        curTasks.add(task);
+        plugin.aliveMobTasks.put(armorStand, curTasks);
 
     }
 

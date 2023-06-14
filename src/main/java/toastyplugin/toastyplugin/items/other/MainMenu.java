@@ -9,7 +9,7 @@ public class MainMenu {
 
     public static ItemStack createOtherItem(String itemName) {
         if (itemName.equals("Main Menu")) {
-            ItemStack mainMenu = new ItemStack(Material.MAP, 1);
+            ItemStack mainMenu = new ItemStack(Material.PAPER, 1);
             ItemMeta meta = mainMenu.getItemMeta();
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);

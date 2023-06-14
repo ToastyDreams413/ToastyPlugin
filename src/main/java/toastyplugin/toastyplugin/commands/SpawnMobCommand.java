@@ -50,7 +50,7 @@ public class SpawnMobCommand implements CommandExecutor, TabCompleter {
                 CustomZombie.spawnCustomZombie(player.getLocation());
             }
             else if (mobName.equals("Mother Hen")) {
-                MotherHen.spawnMotherHen(plugin, player.getLocation());
+                MotherHen.spawnMotherHen(plugin, player.getLocation(), 20, 0.8);
             }
         }
 
