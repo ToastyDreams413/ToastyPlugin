@@ -22,6 +22,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import toastyplugin.toastyplugin.ToastyPlugin;
+import toastyplugin.toastyplugin.data.ClassData;
 import toastyplugin.toastyplugin.data.SwordData;
 import toastyplugin.toastyplugin.data.WandData;
 import toastyplugin.toastyplugin.gui.CustomInventoryHolder;
@@ -81,7 +82,7 @@ public class InteractionListener implements Listener {
 
         }
 
-        // check if they are right clicking
+        // check if they are right-clicking
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             // check if they are using a wand
             if (mainHandItem != null && mainHandItem.getType() == Material.STONE_SWORD && mainHandItem.getItemMeta().hasCustomModelData()) {
@@ -123,6 +124,12 @@ public class InteractionListener implements Listener {
 
 
     private void shootWand(Player player, String name) {
+        String className = plugin.getConfig().getString(player.getUniqueId() + ".selectedClass");
+        if (!ClassData.CLASS_WEAPONS.get(className).equals("Wand")) {
+            player.sendMessage(ChatColor.RED + "Your selected class does not allow you to use wands!");
+            return;
+        }
+
         int cooldown = WandData.WAND_COOLDOWN.get(name);
         UUID playerUUID = player.getUniqueId();
 
@@ -139,13 +146,14 @@ public class InteractionListener implements Listener {
         double damage = WandData.WAND_DAMAGE.get(name);
         double velocity = WandData.WAND_VELOCITY.get(name);
         double range = WandData.WAND_RANGE.get(name);
+        Color shotColor = WandData.WAND_SHOT_COLOR.get(name);
 
         Vector initialOffset = player.getLocation().getDirection().multiply(0.3);
         Vector direction = player.getLocation().getDirection().multiply(velocity);
         Location location = player.getEyeLocation().add(initialOffset);
         location.subtract(0, 0.5, 0);
 
-        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.WHITE, 1);
+        Particle.DustOptions dustOptions = new Particle.DustOptions(shotColor, 1);
 
         int numIters = (int) (range / velocity);
         new BukkitRunnable() {
@@ -193,15 +201,24 @@ public class InteractionListener implements Listener {
     private void checkSwordDamageCustomMob(Player player, String swordName) {
         double range = SwordData.SWORD_RANGE.get(swordName);
         double damage = SwordData.SWORD_DAMAGE.get(swordName);
+        String className = plugin.getConfig().getString(player.getUniqueId() + ".selectedClass");
+        if (!ClassData.CLASS_WEAPONS.get(className).equals("Sword")) {
+            player.sendMessage(ChatColor.RED + "Your selected class does not allow you to use swords!");
+            return;
+        }
         for (ArmorStand armorStand : plugin.aliveMobs.keySet()) {
             if (armorStand.getLocation().distance(player.getLocation()) <= range) {
                 Vector angleToMob = armorStand.getLocation().add(0, 1, 0).toVector().subtract(player.getEyeLocation().toVector());
                 // player.sendMessage("Your current normalized angle vector value: " + angleToMob.normalize().dot(player.getEyeLocation().getDirection()));
                 if (angleToMob.normalize().dot(player.getEyeLocation().getDirection()) > 0.985) {
-                    double realDamage = damage * player.getAttackCooldown();
+                    // player.sendMessage("your attack cooldown: " + player.getAttackCooldown());
+                    if (player.getAttackCooldown() < 1) {
+                        damage *= player.getAttackCooldown() * 0.5;
+                    }
+                    // player.sendMessage("your attack cooldown: " + player.getAttackCooldown() + " damage: " + damage);
                     DecimalFormat df = new DecimalFormat("#.##");
-                    realDamage = Double.valueOf(df.format(realDamage));
-                    damageCustomMob(player, armorStand, realDamage);
+                    damage = Double.valueOf(df.format(damage));
+                    damageCustomMob(player, armorStand, damage);
                     return;
                 }
             }

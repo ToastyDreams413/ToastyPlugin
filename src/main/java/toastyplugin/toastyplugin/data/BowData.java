@@ -20,7 +20,7 @@ public class BowData {
     }};
 
     public static final Map<String, Integer> BOW_MODEL_NUMBER = new HashMap<String, Integer>() {{
-        put("Starter Sword", 1);
+        put("Starter Bow", 1);
     }};
 
 }

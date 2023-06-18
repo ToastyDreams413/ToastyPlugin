@@ -17,7 +17,7 @@ public class MotherHen {
 
     public static void spawnMotherHen(ToastyPlugin plugin, Location location, int range, double projectileRadius) {
         ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
-        armorStand.setVisible(false);
+        armorStand.setVisible(true);
         armorStand.setGravity(false);
         armorStand.setMarker(true);
         // armorStand.setInvulnerable(true);
@@ -30,8 +30,39 @@ public class MotherHen {
         armorStand.getEquipment().setHelmet(cobwebItem);
         plugin.aliveMobs.put(armorStand, 100.0);
 
-        // create a new BukkitRunnable to control the armor stand
-        BukkitTask task = new BukkitRunnable() {
+        BukkitTask facePlayerTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                Player closestPlayer = null;
+                double closestPlayerDistance = -1;
+                for (Player player : plugin.joinedPlayers) {
+                    double currentDistance = Math.abs(player.getLocation().distance(armorStand.getLocation()));
+                    if (currentDistance < range && (currentDistance < closestPlayerDistance || closestPlayerDistance == -1)) {
+                        closestPlayer = player;
+                        closestPlayerDistance = currentDistance;
+                    }
+                }
+
+                if (closestPlayer == null) {
+                    return;
+                }
+
+                // calculate the direction the ArmorStand needs to face to look at the player
+                Vector direction = closestPlayer.getLocation().toVector().subtract(armorStand.getLocation().toVector());
+
+                // calculate the yaw and pitch
+                float yaw = (float)Math.toDegrees(Math.atan2(direction.getZ(), direction.getX())) - 90;
+                float pitch = (float)Math.toDegrees(Math.atan2(direction.getY(), Math.sqrt(Math.pow(direction.getX(), 2) + Math.pow(direction.getZ(), 2))));
+
+                // set the ArmorStand's rotation to face the player
+                armorStand.setRotation(yaw, -pitch);
+            }
+
+        }.runTaskTimer(plugin, 0L, 1L);
+
+
+
+        BukkitTask shootTask = new BukkitRunnable() {
             @Override
             public void run() {
                 // check for the closest player within 10 blocks
@@ -51,7 +82,7 @@ public class MotherHen {
                 }
 
                 // if the closest player is on the mob, don't actually shoot, just damage the player
-                if (closestPlayer.getLocation().equals(armorStand.getLocation())) {
+                if (closestPlayer.getLocation().getBlockX() == armorStand.getLocation().getBlockX() && closestPlayer.getLocation().getBlockY() == armorStand.getLocation().getBlockY() && closestPlayer.getLocation().getBlockZ() == armorStand.getLocation().getBlockZ()) {
                     closestPlayer.damage(1.0);
                     return;
                 }
@@ -76,6 +107,7 @@ public class MotherHen {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
+                        block.setVelocity(velocity);
 
                         // move the armor stand randomly
                         double x = (Math.random() - 0.5) / 10;
@@ -104,17 +136,6 @@ public class MotherHen {
                     }
                 }.runTaskTimer(plugin, 0L, 1L);
 
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!block.isValid()) {
-                            this.cancel();
-                            return;
-                        }
-                        block.setVelocity(velocity);
-                    }
-                }.runTaskTimer(plugin, 1L, 1L);  // Run every tick (20 ticks = 1 second)
-
                 // check if reached range
                 Location originalLocation = block.getLocation();
                 new BukkitRunnable() {
@@ -136,7 +157,8 @@ public class MotherHen {
         }.runTaskTimer(plugin, 0L, 20L);
 
         java.util.Vector<BukkitTask> curTasks = plugin.aliveMobTasks.getOrDefault(armorStand, new java.util.Vector<>());
-        curTasks.add(task);
+        curTasks.add(facePlayerTask);
+        curTasks.add(shootTask);
         plugin.aliveMobTasks.put(armorStand, curTasks);
 
     }
